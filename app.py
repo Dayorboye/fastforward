@@ -130,8 +130,8 @@ transformed_data = transform(extracted_data,coName,countryName)
 # log('SQL Connection initiated.')
 
 df = transformed_data 
-table_name = "transformed_sales_report"
-load_to_db(df, sql_connection, table_name)
+# table_name = "transformed_sales_report"
+# load_to_db(df, sql_connection, table_name)
 
 # log('Data loaded to Database as table. Running the query')
 
