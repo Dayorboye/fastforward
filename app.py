@@ -16,8 +16,8 @@ from datetime import date, datetime
 from dash.exceptions import PreventUpdate
 from dash import dash
 from dash.dash import no_update
-# import pymysql
-# from sqlalchemy import create_engine
+import pymysql
+from sqlalchemy import create_engine
 # from dash_auth import BasicAuth
 import warnings
 warnings.simplefilter(action='ignore', category=FutureWarning)
@@ -41,16 +41,16 @@ app.config["suppress_callback_exceptions"] = True
 
 # Create Data Pipeline
 
-# gsheetid = '1h-4OQN3FGQwO7d2t4xGrPu3T39uydci9Q77ErwLgK6c'
-# sheet_name = 'Inventory_Summary_With_Sales'
+gsheetid = '1h-4OQN3FGQwO7d2t4xGrPu3T39uydci9Q77ErwLgK6c'
+sheet_name = 'Inventory_Summary_With_Sales'
 
-# gsheet_url = 'https://docs.google.com/spreadsheets/d/{}/gviz/tq?tqx=out:csv&sheet={}'.format(gsheetid,sheet_name)
-# url = gsheet_url
+gsheet_url = 'https://docs.google.com/spreadsheets/d/{}/gviz/tq?tqx=out:csv&sheet={}'.format(gsheetid,sheet_name)
+url = gsheet_url
 
-# # CSV Extract Function
-# def extract(url):
-#     df = pd.read_csv(url)
-#     return df
+# CSV Extract Function
+def extract(url):
+    df = pd.read_csv(url)
+    return df
 
 # Function to format integers to have 16 digits
 def format_to_16_digits(x):
@@ -117,31 +117,31 @@ countryName = 'NIGERIA'
 transformed_data = transform(extracted_data,coName,countryName)
 # log("Transform phase Ended")
 
-# log("Load phase Started")
-df = "transformed_sales_report.csv" 
-load_to_csv(df, transformed_data)
-# log("Load phase Ended")
+# # log("Load phase Started")
+# df = "transformed_sales_report.csv" 
+# load_to_csv(df, transformed_data)
+# # log("Load phase Ended")
 
-# # create aqlalchemy engine for mysql
+# create aqlalchemy engine for mysql
 # sql_connection = create_engine("mysql+pymysql://{user}:{pw}@localhost/{db}"
 #                        .format(user="root",
 #                                pw="giveme123",
 #                                db="dictionary"))
 # log('SQL Connection initiated.')
 
-# df = transformed_data 
-# table_name = "transformed_sales_report"
-# load_to_db(df, sql_connection, table_name)
+df = transformed_data 
+table_name = "transformed_sales_report"
+load_to_db(df, sql_connection, table_name)
 
 # log('Data loaded to Database as table. Running the query')
 
 
-# # create aqlalchemy engine for mysql
+# create aqlalchemy engine for mysql
 # engine = create_engine("mysql+pymysql://{user}:{pw}@localhost/{db}"
 #                        .format(user="root",
 #                                pw="giveme123",
 #                                db="dictionary"))
-# # pymssql
+# pymssql
 
 
 df = pd.read_csv("transformed_sales_report.csv")
@@ -663,31 +663,4 @@ def render_tab_content(tab_switch, stopped_interval):
 
 # Running the server
 if __name__ == "__main__":
-    app.run_server(debug=False, port=8050)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+    app.run_server(debug=False)
