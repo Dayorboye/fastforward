@@ -41,16 +41,16 @@ app.config["suppress_callback_exceptions"] = True
 
 # Create Data Pipeline
 
-gsheetid = '1h-4OQN3FGQwO7d2t4xGrPu3T39uydci9Q77ErwLgK6c'
-sheet_name = 'Inventory_Summary_With_Sales'
+# gsheetid = '1h-4OQN3FGQwO7d2t4xGrPu3T39uydci9Q77ErwLgK6c'
+# sheet_name = 'Inventory_Summary_With_Sales'
 
-gsheet_url = 'https://docs.google.com/spreadsheets/d/{}/gviz/tq?tqx=out:csv&sheet={}'.format(gsheetid,sheet_name)
-url = gsheet_url
+# gsheet_url = 'https://docs.google.com/spreadsheets/d/{}/gviz/tq?tqx=out:csv&sheet={}'.format(gsheetid,sheet_name)
+# url = gsheet_url
 
-# CSV Extract Function
-def extract(url):
-    df = pd.read_csv(url)
-    return df
+# # CSV Extract Function
+# def extract(url):
+#     df = pd.read_csv(url)
+#     return df
 
 # Function to format integers to have 16 digits
 def format_to_16_digits(x):
