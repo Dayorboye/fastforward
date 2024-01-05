@@ -16,8 +16,8 @@ from datetime import date, datetime
 from dash.exceptions import PreventUpdate
 from dash import dash
 from dash.dash import no_update
-import pymysql
-from sqlalchemy import create_engine
+# import pymysql
+# from sqlalchemy import create_engine
 # from dash_auth import BasicAuth
 import warnings
 warnings.simplefilter(action='ignore', category=FutureWarning)
@@ -122,29 +122,29 @@ df = "transformed_sales_report.csv"
 load_to_csv(df, transformed_data)
 log("Load phase Ended")
 
-# create aqlalchemy engine for mysql
-sql_connection = create_engine("mysql+pymysql://{user}:{pw}@localhost/{db}"
-                       .format(user="root",
-                               pw="giveme123",
-                               db="dictionary"))
-log('SQL Connection initiated.')
+# # create aqlalchemy engine for mysql
+# sql_connection = create_engine("mysql+pymysql://{user}:{pw}@localhost/{db}"
+#                        .format(user="root",
+#                                pw="giveme123",
+#                                db="dictionary"))
+# log('SQL Connection initiated.')
 
-df = transformed_data 
-table_name = "transformed_sales_report"
-load_to_db(df, sql_connection, table_name)
+# df = transformed_data 
+# table_name = "transformed_sales_report"
+# load_to_db(df, sql_connection, table_name)
 
-log('Data loaded to Database as table. Running the query')
-
-
-# create aqlalchemy engine for mysql
-engine = create_engine("mysql+pymysql://{user}:{pw}@localhost/{db}"
-                       .format(user="root",
-                               pw="giveme123",
-                               db="dictionary"))
-# pymssql
+# log('Data loaded to Database as table. Running the query')
 
 
-df = pd.read_sql_table("transformed_sales_report", con=engine)
+# # create aqlalchemy engine for mysql
+# engine = create_engine("mysql+pymysql://{user}:{pw}@localhost/{db}"
+#                        .format(user="root",
+#                                pw="giveme123",
+#                                db="dictionary"))
+# # pymssql
+
+
+df = pd.read_csv("transformed_sales_report.csv")
 
 
 Revenue = df['ORIGINAL RRP'].sum().round(2)
