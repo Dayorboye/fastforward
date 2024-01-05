@@ -16,8 +16,8 @@ from datetime import date, datetime
 from dash.exceptions import PreventUpdate
 from dash import dash
 from dash.dash import no_update
-import pymysql
-from sqlalchemy import create_engine
+# import pymysql
+# from sqlalchemy import create_engine
 # from dash_auth import BasicAuth
 import warnings
 warnings.simplefilter(action='ignore', category=FutureWarning)
