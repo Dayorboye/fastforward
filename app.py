@@ -98,29 +98,29 @@ def load_to_db(df, sql_connection, table_name):
 
 
 # Logging
-def log(message):
-    timestamp_format = '%Y-%h-%d-%H:%M:%S' # Year-Monthname-Day-Hour-Minute-Second
-    now = datetime.now() # get current timestamp
-    timestamp = now.strftime(timestamp_format)
-    with open("logfile.txt","a") as f:
-        f.write(timestamp + ',' + message + '\n')
+# def log(message):
+#     timestamp_format = '%Y-%h-%d-%H:%M:%S' # Year-Monthname-Day-Hour-Minute-Second
+#     now = datetime.now() # get current timestamp
+#     timestamp = now.strftime(timestamp_format)
+#     with open("logfile.txt","a") as f:
+#         f.write(timestamp + ',' + message + '\n')
     
-log("ETL Job Started")
+# log("ETL Job Started")
 
-log("Extract phase Started")
+# log("Extract phase Started")
 extracted_data = extract(url)
-log("Extract phase Ended")
+# log("Extract phase Ended")
 
-log("Transform phase Started")
+# log("Transform phase Started")
 coName = 'SMARTMARTLTD'
 countryName = 'NIGERIA'
 transformed_data = transform(extracted_data,coName,countryName)
-log("Transform phase Ended")
+# log("Transform phase Ended")
 
-log("Load phase Started")
+# log("Load phase Started")
 df = "transformed_sales_report.csv" 
 load_to_csv(df, transformed_data)
-log("Load phase Ended")
+# log("Load phase Ended")
 
 # # create aqlalchemy engine for mysql
 # sql_connection = create_engine("mysql+pymysql://{user}:{pw}@localhost/{db}"
