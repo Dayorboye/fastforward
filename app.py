@@ -1,9 +1,11 @@
+import os
+import pathlib
 
 import dash
-from dash import dcc
-from dash import html
+import dash_core_components as dcc
+import dash_html_components as html
 from dash.dependencies import Input, Output, State
-from dash.dash_table import DataTable, Format
+import dash_table
 import plotly.graph_objs as go
 import dash_daq as daq
 import plotly.express as px
@@ -19,6 +21,10 @@ import gspread
 from oauth2client.service_account import ServiceAccountCredentials
 import pymysql
 from sqlalchemy import create_engine
+import socket
+import warnings
+warnings.simplefilter(action='ignore', category=FutureWarning)
+
 
 
 
@@ -30,6 +36,9 @@ app.title = "Sales Report Engine SRE"
 # Declare server for Heroku deployment. Needed for Procfile.
 server = app.server
 app.config["suppress_callback_exceptions"] = True
+
+# APP_PATH = str(pathlib.Path(__file__).parent.resolve())
+# Abuja_branch_dataset = pd.read_csv(os.path.join(APP_PATH, os.path.join("data", "Abuja_branch_dataset.csv")))
 
 
 # Create Data Pipeline
@@ -153,7 +162,6 @@ load_to_sql(transformed_data, output_file)
 query = "SELECT * FROM extracted_tables"
 
 # Use the read_sql() function with the SQL query to load data into a DataFrame
-# Use the read_sql() function with the SQL query to load data into a DataFrame
 try:
     # Optimize loading by using a SQL query instead of directly loading the entire table
     # Modify the query as per your requirements to load specific columns or apply filters
@@ -162,7 +170,7 @@ try:
     # Use the read_sql() function with the SQL query to load data into a DataFrame
     # Adjust chunksize as needed; it specifies the number of rows fetched at a time
     chunksize = 10000  # Experiment with different values for optimal performance
-    df_chunks = pd.read_sql(query, con=sql_connection , chunksize=chunksize)
+    df_chunks = pd.read_sql(query, con=sql_connection, chunksize=chunksize)
     
     # Initialize an empty DataFrame to concatenate chunks
     df = pd.concat(df_chunks)
@@ -176,7 +184,6 @@ except Exception as e:
 # Display the DataFrame directly in the cell output
 df = df
 
-
 # Assuming the columns are named as in your previous example
 columns_to_select = ['PARTNER NAME','COUNTRY','WEEK','DEPARTMENT','ITEM CODE(16 DIGITS)',
                      'CLASSNAME','SEASON','STYLE NAME','COLOUR NAME','DESCRIPTION',
@@ -185,6 +192,8 @@ columns_to_select = ['PARTNER NAME','COUNTRY','WEEK','DEPARTMENT','ITEM CODE(16 
 
 # Create a new DataFrame with selected columns using .loc[]
 df = df.loc[:, columns_to_select]
+
+
 
 Revenue = df['ORIGINAL RRP'].sum().round(2)
 TR = 'Revenue  '
@@ -211,13 +220,13 @@ def drawText(name, val):
             ),
             style={
                 'width': '150px',
-                'border-radius': '4px',
+                'border-radius': '5px',
                 'padding': '0 0 2px 0',
                 'box-shadow': '0px 0px 17px 0px rgba(186, 218, 212, .5)',
                 'text-align': 'center',
                 'margin': 'auto',
-                'border-left': '#FAA831 solid 16px',  # Border to the left
-                'border-right': '#FAA831 solid 4px',  # Border to the right
+                'border-left': '#91dfd2 solid 16px',  # Border to the left
+                'border-right': '#91dfd2 solid 4px',  # Border to the right
                 'border-top': '#91dfd2 solid 8px',  # Border to the left
             },
         ),
@@ -276,7 +285,7 @@ def drawSun_bst():
 
 agg_Dept_Rev = df.groupby('DEPARTMENT').agg({"SALES VALUE LAST WEEK LOCAL" : "sum"}).reset_index().sort_values(by='SALES VALUE LAST WEEK LOCAL', ascending=False)
 agg_Dept_Rev['color'] = colors['level10']
-agg_Dept_Rev.loc[:1, 'color'] = colors['level1']
+agg_Dept_Rev['color'][:1] = colors['level1']
 agg_Dept_Rev['color'][1:2] = colors['level2']
 agg_Dept_Rev['color'][2:3] = colors['level3']
 agg_Dept_Rev['color'][3:4] = colors['level4']
@@ -705,5 +714,4 @@ def render_tab_content(tab_switch, stopped_interval):
 
 # Running the server
 if __name__ == "__main__":
-    app.run_server(debug=True, port=8050)
-
+    app.run_server(debug=False, port=8050)
