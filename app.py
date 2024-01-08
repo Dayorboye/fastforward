@@ -345,10 +345,6 @@ def drawLine_RavrgT():
 
 
 
-
-
-
-
 def build_banner():
     return html.Div(
         id="banner",
