@@ -79,10 +79,10 @@ def format_to_16_digits(x):
 
 def transform(appended_table,companyName,countryName):
     
-    appended_table.drop(index=appended_table.index[:5],axis=0, inplace=True)
+    appended_table.drop(index=appended_table.index[:5], axis=0, inplace=True)
     appended_table.columns = appended_table.iloc[0]
     appended_table = appended_table[1:]
-    appended_table.dropna(axis = 1, how = 'all', inplace = True)
+    appended_table.dropna(axis=1, how='all', inplace=True)
     cols = ['', 'Department', 'Week', '', 'Vendor', '', 'Item Name', '',
        'Item Description', '', 'Attribute', '', 'Size', '', 'Item #', '',
        'UPC', '', 'Alternate Lookup', '', 'Dept Code', '', 'Vendor Code', '',
