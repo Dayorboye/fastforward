@@ -10,18 +10,20 @@ import plotly.graph_objs as go
 import dash_daq as daq
 import plotly.express as px
 import pandas as pd
+import numpy as np
 from dash import dash_table
 import dash_bootstrap_components as dbc
 from datetime import date, datetime
 from dash.exceptions import PreventUpdate
 from dash import dash
 from dash.dash import no_update
-# import pymysql
-# from sqlalchemy import create_engine
-# from dash_auth import BasicAuth
+import gspread
+from oauth2client.service_account import ServiceAccountCredentials
+import pymysql
+from sqlalchemy import create_engine
+import socket
 import warnings
 warnings.simplefilter(action='ignore', category=FutureWarning)
-
 
 
 
@@ -41,16 +43,31 @@ app.config["suppress_callback_exceptions"] = True
 
 # Create Data Pipeline
 
-gsheetid = '1h-4OQN3FGQwO7d2t4xGrPu3T39uydci9Q77ErwLgK6c'
-sheet_name = 'Inventory_Summary_With_Sales'
 
-gsheet_url = 'https://docs.google.com/spreadsheets/d/{}/gviz/tq?tqx=out:csv&sheet={}'.format(gsheetid,sheet_name)
-url = gsheet_url
+def extract_and_append_all_tables(sheet_key):
+    # Use Google Sheets API credentials
+    scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
+    credentials = ServiceAccountCredentials.from_json_keyfile_name("dogwood-courier-406511-c8a6ccfe04e0.json", scope)
+    gc = gspread.authorize(credentials)
 
-# CSV Extract Function
-def extract(url):
-    df = pd.read_csv(url)
-    return df
+    # Open the Google Sheet by key
+    workbook = gc.open_by_key(sheet_key)
+
+    # Initialize an empty DataFrame to store the appended tables
+    appended_table = pd.DataFrame()
+
+    # Iterate through each sheet in the workbook
+    for sheet in workbook.worksheets():
+        # Get all values from the sheet
+        data = sheet.get_all_values()
+
+        # Convert the data to a DataFrame
+        df = pd.DataFrame(data[1:], columns=data[0])
+
+        # Append the DataFrame to the main table
+        appended_table = appended_table.append(df, ignore_index=True)
+    return appended_table
+
 
 # Function to format integers to have 16 digits
 def format_to_16_digits(x):
@@ -59,92 +76,108 @@ def format_to_16_digits(x):
         formatted_x = '0' * (16 - len(formatted_x)) + formatted_x
     return formatted_x
 
-# Transform
-def transform(df, coName, countryName):
-    df.dropna(axis = 1, how = 'all', inplace = True)
-    df['name'] = coName
-    df['country'] = countryName
-    df = df[['name','country','Week','Department','SKU','CATEGORY','SEASON','STYLE NAME/INT. CAT','Attribute','Item Description','Ext Price','Ext Price.1','Qty.1','Qty']]
-    cols = ['PARTNER NAME','COUNTRY','WEEK','DEPARTMENT','ITEM CODE(16 DIGITS)','CLASSNAME','SEASON','STYLE NAME','COLOUR NAME','DESCRIPTION','ORIGINAL RRP','SALES VALUE LAST WEEK LOCAL','SALES UNITS LAST WEEK','STORE STOCK UNITS']
-    df.columns = cols
-    df['SALES VALUE LAST WEEK LOCAL'] = df['SALES VALUE LAST WEEK LOCAL'].str.replace(',','')
-    df['ORIGINAL RRP'] = df['ORIGINAL RRP'].str.replace(',','')    
-    df['STORE STOCK UNITS'] = df['STORE STOCK UNITS'].str.replace(',','')
-    df = df.astype({'ORIGINAL RRP':'float','SALES VALUE LAST WEEK LOCAL':'float','SALES UNITS LAST WEEK':'float','STORE STOCK UNITS':'float'})
-    df = df.iloc[:-1]
-    df['ITEM CODE(16 DIGITS)'] = df['ITEM CODE(16 DIGITS)'].astype(str)
+
+def transform(appended_table,companyName,countryName):
+    
+    appended_table.drop(index=appended_table.index[:5],axis=0, inplace=True)
+    appended_table.columns = appended_table.iloc[0]
+    appended_table = appended_table[1:]
+    appended_table.dropna(axis = 1, how = 'all', inplace = True)
+    cols = ['', 'Department', 'Week', '', 'Vendor', '', 'Item Name', '',
+       'Item Description', '', 'Attribute', '', 'Size', '', 'Item #', '',
+       'UPC', '', 'Alternate Lookup', '', 'Dept Code', '', 'Vendor Code', '',
+       'CATEGORY', '', 'GENDER', '', 'SEASON', '', 'STYLE NAME/INT. CAT', '',
+       'SKU', '', 'Quick Pick Group', '', 'Ext Price(Inventory)', '', 'Qty(Inventory)', '',
+       'Ext Cost(Inventory', '', 'Ext Price(Sold)', '', 'Qty(Sold)', '', 'Ext Cost(Sold)']
+    appended_table.columns = cols
+    appended_table['name'] = companyName
+    appended_table['country'] = countryName
+    appended_table = appended_table[['name','country','Week','Department','SKU','CATEGORY','SEASON',
+                                     'STYLE NAME/INT. CAT','Attribute','Item Description','Ext Price(Inventory)',
+                                     'Ext Price(Sold)','Qty(Sold)','Qty(Inventory)']]
+    
+    colss = ['PARTNER NAME','COUNTRY','WEEK','DEPARTMENT','ITEM CODE(16 DIGITS)','CLASSNAME','SEASON',
+            'STYLE NAME','COLOUR NAME','DESCRIPTION','ORIGINAL RRP','SALES VALUE LAST WEEK LOCAL',
+            'SALES UNITS LAST WEEK','STORE STOCK UNITS']
+    appended_table.columns = colss
+    appended_table['SALES VALUE LAST WEEK LOCAL'] = appended_table['SALES VALUE LAST WEEK LOCAL'].str.replace(',','')
+    appended_table['ORIGINAL RRP'] = appended_table['ORIGINAL RRP'].str.replace(',','')    
+    appended_table['STORE STOCK UNITS'] = appended_table['STORE STOCK UNITS'].str.replace(',','')
+#     appended_table = appended_table.astype({'WEEK':'float','ORIGINAL RRP':'float','SALES VALUE LAST WEEK LOCAL':'float','SALES UNITS LAST WEEK':'float','STORE STOCK UNITS':'float'})
+    numeric_cols = ['WEEK', 'ORIGINAL RRP', 'SALES VALUE LAST WEEK LOCAL', 'SALES UNITS LAST WEEK', 'STORE STOCK UNITS']
+
+    for col in numeric_cols:
+        appended_table[col] = pd.to_numeric(appended_table[col], errors='coerce')
+
+    appended_table = appended_table.dropna(subset=numeric_cols)  # Drop rows with NaN values after conversion
+    appended_table = appended_table.iloc[:-1]
+        # Applying the function to the DataFrame column
+    appended_table['ITEM CODE(16 DIGITS)'] = appended_table['ITEM CODE(16 DIGITS)'].astype(str)
 
     problematic_values = []
 
-    for idx, value in df['ITEM CODE(16 DIGITS)'].items():
+    for idx, value in appended_table['ITEM CODE(16 DIGITS)'].items():
         try:
-            df.at[idx, 'ITEM CODE(16 DIGITS)'] = format_to_16_digits(float(value))
+            appended_table.at[idx, 'ITEM CODE(16 DIGITS)'] = format_to_16_digits(float(value))
         except ValueError:
             problematic_values.append(value)
-            df.at[idx, 'ITEM CODE(16 DIGITS)'] = None
+            appended_table.at[idx, 'ITEM CODE(16 DIGITS)'] = None
 
     if problematic_values:
         print(f"Problematic values in 'ITEM CODE(16 DIGITS)' column: {problematic_values}")
-    return df
-
-# Load to csv
-def load_to_csv(df, csv_path):
-    csv_path.to_csv(df)
-
-
-# Load to sql database
-def load_to_db(df, sql_connection, table_name):
-    df.to_sql(table_name, sql_connection, if_exists='replace', index=False)  
-
-
-# Logging
-# def log(message):
-#     timestamp_format = '%Y-%h-%d-%H:%M:%S' # Year-Monthname-Day-Hour-Minute-Second
-#     now = datetime.now() # get current timestamp
-#     timestamp = now.strftime(timestamp_format)
-#     with open("logfile.txt","a") as f:
-#         f.write(timestamp + ',' + message + '\n')
     
-# log("ETL Job Started")
+    appended_table['ID'] = np.arange(1, len(appended_table)+1)
+    return appended_table
 
-# log("Extract phase Started")
-extracted_data = extract(url)
-# log("Extract phase Ended")
+  
 
-# log("Transform phase Started")
+    
+def load_to_sql(appended_table, output_file):
+    
+    # Write the final appended table to an Excel file
+    appended_table.to_sql(output_file, sql_connection, if_exists='replace', index=False)
+    print(f"All tables successfully appended and saved to {output_file}")
+    
+
+# Replace the placeholders with your actual database credentials
+host = 'sql3.freesqldatabase.com'
+database_name = 'sql3675260'
+user = 'sql3675260'
+password = 'tnqjLxZuFv'
+port = '3306'
+
+# Create an SQLAlchemy engine to connect to the MySQL database
+sql_connection = create_engine(f"mysql+pymysql://{user}:{password}@{host}:{port}/{database_name}")  
+
+sheet_key = "1e7ZZBRt37kEElHnyFF_VV_4bVRqjy3oXNw8cY1OhIcw"  # Replace with your Google Sheet key
+output_file = "extracted_tables"  # Replace with your desired output file name
+extracted_data = extract_and_append_all_tables(sheet_key)
 coName = 'SMARTMARTLTD'
 countryName = 'NIGERIA'
 transformed_data = transform(extracted_data,coName,countryName)
-# log("Transform phase Ended")
+load_to_sql(transformed_data, output_file)
 
-# # log("Load phase Started")
-# df = "transformed_sales_report.csv" 
-# load_to_csv(df, transformed_data)
-# # log("Load phase Ended")
+# Optimize loading by using a SQL query instead of directly loading the entire table
+# Modify the query as per your requirements to load specific columns or apply filters
+query = "SELECT * FROM extracted_tables"
 
-# create aqlalchemy engine for mysql
-# sql_connection = create_engine("mysql+pymysql://{user}:{pw}@localhost/{db}"
-#                        .format(user="root",
-#                                pw="giveme123",
-#                                db="dictionary"))
-# log('SQL Connection initiated.')
+# Use the read_sql() function with the SQL query to load data into a DataFrame
+try:
+    # Adjust chunksize as needed; it specifies the number of rows fetched at a time
+    chunksize = 10000  # Experiment with different values for optimal performance
+    df_chunks = pd.read_sql(query, con=sql_connection, chunksize=chunksize)
+    
+    # Initialize an empty DataFrame to concatenate chunks
+    df = pd.concat(df_chunks)
+    
+    # Now df contains the entire table data
+    print("Data loaded successfully.")
+except Exception as e:
+    print("Error occurred while loading data:", str(e))
 
-df = transformed_data 
-# table_name = "transformed_sales_report"
-# load_to_db(df, sql_connection, table_name)
-
-# log('Data loaded to Database as table. Running the query')
-
-
-# create aqlalchemy engine for mysql
-# engine = create_engine("mysql+pymysql://{user}:{pw}@localhost/{db}"
-#                        .format(user="root",
-#                                pw="giveme123",
-#                                db="dictionary"))
-# pymssql
-
-
-df = pd.read_csv("transformed_sales_report.csv")
+df = df[['PARTNER NAME','COUNTRY','WEEK','DEPARTMENT','ITEM CODE(16 DIGITS)','CLASSNAME','SEASON',
+        'STYLE NAME','COLOUR NAME','DESCRIPTION','ORIGINAL RRP','SALES VALUE LAST WEEK LOCAL',
+        'SALES UNITS LAST WEEK','STORE STOCK UNITS']]
 
 
 Revenue = df['ORIGINAL RRP'].sum().round(2)
@@ -172,6 +205,7 @@ def drawText(name, val):
             ),
             style={
                 'width': '150px',
+                'border-radius': '4px',
                 'padding': '0 0 2px 0',
                 'box-shadow': '0px 0px 17px 0px rgba(186, 218, 212, .5)',
                 'text-align': 'center',
@@ -419,7 +453,9 @@ def build_tab_1():
                                                               fontWeight='bold',
                                                               fontSize='16px',
                                                               padding = '18px 10px 18px 10px'),
-                                            style_data=dict(backgroundColor="black"),
+                                            style_data=dict(backgroundColor="black",
+                                                              fontSize='14px',
+                                                              padding = '0 10px 0 10px'),
                                         ),
 
                                         dcc.Download(id="download-data"),
@@ -447,10 +483,10 @@ def build_quick_stats_panel():
                 step=1, 
                 value= 31, 
                 style={
-                    'margin-left': '30px', 
+                    'margin': '0 0 20px 0px', 
                     'background-color': '#161a28', 
                     'color': '#92e0d3',
-                    'margin-top':'-60px'}
+                    'width': '150px'}
                     ),
 
             html.Div(
@@ -475,10 +511,10 @@ def build_quick_stats_panel():
                 ],
             ),
             
-            # html.Div(
-            #     id="utility-card",
-            #     children=[daq.StopButton(id="stop-button", size=160, n_clicks=0)],
-            # ),
+            html.Div(
+                id="utility-card",
+                children=[daq.StopButton(id="stop-button", size=160, n_clicks=0)],
+            ),
         ],
     )
 
@@ -663,4 +699,31 @@ def render_tab_content(tab_switch, stopped_interval):
 
 # Running the server
 if __name__ == "__main__":
-    app.run_server(debug=False)
+    app.run_server(debug=True, port=8050)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
