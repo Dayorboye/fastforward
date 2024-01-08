@@ -2,8 +2,8 @@ import os
 import pathlib
 
 import dash
-import dash_core_components as dcc
-import dash_html_components as html
+from dash import dcc
+from dash import html
 from dash.dependencies import Input, Output, State
 import dash_table
 import plotly.graph_objs as go
@@ -36,9 +36,6 @@ app.title = "Sales Report Engine SRE"
 # Declare server for Heroku deployment. Needed for Procfile.
 server = app.server
 app.config["suppress_callback_exceptions"] = True
-
-# APP_PATH = str(pathlib.Path(__file__).parent.resolve())
-# Abuja_branch_dataset = pd.read_csv(os.path.join(APP_PATH, os.path.join("data", "Abuja_branch_dataset.csv")))
 
 
 # Create Data Pipeline
@@ -162,10 +159,16 @@ load_to_sql(transformed_data, output_file)
 query = "SELECT * FROM extracted_tables"
 
 # Use the read_sql() function with the SQL query to load data into a DataFrame
+# Use the read_sql() function with the SQL query to load data into a DataFrame
 try:
+    # Optimize loading by using a SQL query instead of directly loading the entire table
+    # Modify the query as per your requirements to load specific columns or apply filters
+    query = "SELECT * FROM extracted_tables"
+
+    # Use the read_sql() function with the SQL query to load data into a DataFrame
     # Adjust chunksize as needed; it specifies the number of rows fetched at a time
     chunksize = 10000  # Experiment with different values for optimal performance
-    df_chunks = pd.read_sql(query, con=sql_connection, chunksize=chunksize)
+    df_chunks = pd.read_sql(query, con=sql_connection , chunksize=chunksize)
     
     # Initialize an empty DataFrame to concatenate chunks
     df = pd.concat(df_chunks)
@@ -174,11 +177,20 @@ try:
     print("Data loaded successfully.")
 except Exception as e:
     print("Error occurred while loading data:", str(e))
+    df = pd.DataFrame()  # Define an empty DataFrame to handle the case of failure to load data
 
-df = df[['PARTNER NAME','COUNTRY','WEEK','DEPARTMENT','ITEM CODE(16 DIGITS)','CLASSNAME','SEASON',
-        'STYLE NAME','COLOUR NAME','DESCRIPTION','ORIGINAL RRP','SALES VALUE LAST WEEK LOCAL',
-        'SALES UNITS LAST WEEK','STORE STOCK UNITS']]
+# Display the DataFrame directly in the cell output
+df = df
 
+
+# Assuming the columns are named as in your previous example
+columns_to_select = ['PARTNER NAME','COUNTRY','WEEK','DEPARTMENT','ITEM CODE(16 DIGITS)',
+                     'CLASSNAME','SEASON','STYLE NAME','COLOUR NAME','DESCRIPTION',
+                     'ORIGINAL RRP','SALES VALUE LAST WEEK LOCAL','SALES UNITS LAST WEEK',
+                     'STORE STOCK UNITS']
+
+# Create a new DataFrame with selected columns using .loc[]
+df = df.loc[:, columns_to_select]
 
 Revenue = df['ORIGINAL RRP'].sum().round(2)
 TR = 'Revenue  '
@@ -700,30 +712,4 @@ def render_tab_content(tab_switch, stopped_interval):
 # Running the server
 if __name__ == "__main__":
     app.run_server(debug=True, port=8050)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
