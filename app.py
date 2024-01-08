@@ -1,11 +1,9 @@
-import os
-import pathlib
 
 import dash
 from dash import dcc
 from dash import html
 from dash.dependencies import Input, Output, State
-import dash_table
+from dash.dash_table import DataTable, Format
 import plotly.graph_objs as go
 import dash_daq as daq
 import plotly.express as px
@@ -21,10 +19,6 @@ import gspread
 from oauth2client.service_account import ServiceAccountCredentials
 import pymysql
 from sqlalchemy import create_engine
-import socket
-import warnings
-warnings.simplefilter(action='ignore', category=FutureWarning)
-
 
 
 
@@ -282,7 +276,7 @@ def drawSun_bst():
 
 agg_Dept_Rev = df.groupby('DEPARTMENT').agg({"SALES VALUE LAST WEEK LOCAL" : "sum"}).reset_index().sort_values(by='SALES VALUE LAST WEEK LOCAL', ascending=False)
 agg_Dept_Rev['color'] = colors['level10']
-agg_Dept_Rev['color'][:1] = colors['level1']
+agg_Dept_Rev.loc[:1, 'color'] = colors['level1']
 agg_Dept_Rev['color'][1:2] = colors['level2']
 agg_Dept_Rev['color'][2:3] = colors['level3']
 agg_Dept_Rev['color'][3:4] = colors['level4']
