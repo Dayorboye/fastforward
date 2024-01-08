@@ -1,0 +1,13 @@
+{
+  "type": "service_account",
+  "project_id": "dogwood-courier-406511",
+  "private_key_id": "c8a6ccfe04e0f76f5523ea79a848840288430f33",
+  "private_key": "-----BEGIN PRIVATE KEY-----\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQC4ip6pIOrSbPDz\nZY2t1fIXyA9UfUtJVVMlfKCkcYk+xt3b0siRS6F7T7kn2RtVbiMcFYmQMsRbc6Fk\nHsPaBu9IOujypZpZ7B7CaGASbPT037S1XhDhk1Uw/FhqfdWhalUitf4vQvQKzLRD\nxcRaSDJIfdyTrZVdwcl5Gft7UShHI40XFnKjkAVsDIjoEVLm5Mv0crrjhbwP8GSX\nbDUkUd5VMzG18S0gu76q3SLQiRe/SLL0nqvPBGXooBuyplUu+yue60sGkBo96MmM\nvHjQ7v8ZOcPyAM2ptzHyyTRckJS3kDMbZx0XjjJr5P+ZtRP20O2Bi5rDIEULmGZL\nNOn2+E73AgMBAAECggEAWgREIHvOD5bUceW3lnQmAzOzRqNXdg4I4OBJ++zl5Zlb\n3z6SV01tF5lr1+QvURzIQ4q973jUD0f4Eb5wCooXbkROHQ5qnDJxTqNbOaGsW0ZD\n/7RCx8X2aE6vUkLPUk1r+eKMesFOCXaQ9/4gKWnOHU5HqkGh+nnsrQXfheewngID\nbaUvHUQT+SB7leiNgS9e5JJltrQD0RfWmZ7zTbruseM0H5FfBIW7eK4fvZehb3Jw\nC0ybSfWLCyljgL5zyA5ynXQSFyZZcEQdzeQpG13JRH0cVWsnDNNhiZVfPUjqlSBX\nJgBUnRUfe0SN3Z6PVt6K8g/PGXl9VDwI2PrDubO6AQKBgQD5BY2ZV4mDGAb71Ewy\nhgW8smAQJo8gqkhLkhwtkUtbTij01TIqZ4ZsGOQeD30hCvGVXmii7Rx2bKto07FL\n5nuk/WRWMMbt2s69JgV96788rioOzPcPwgGn42CEqsby5COZdq2jC0J7pVS9HR9u\nT6yZpojZaU9AcDGO2Z7aacrvqQKBgQC9tn6f4D59vOxFqJ8sWC8CzFAWCWC9scyu\nR0EQL3vn48ogJ69j7O8bvnwGtdcuxJTgnatY6PJGF9ov18Qu5pck5utIzBvPso+O\nsQNqoHRmJdIzEwpIWQTdHI0BCNl0/ygU2hgUFClnNHcSzjsVuLZhDEEEKM2BCaUi\nnWCHkl7tnwKBgEhdkcGfC6oaAGWMUzxXcDFe0MXAvtUqRuoXIrMnRvPYqdREZFio\nTwr4zMnjjGRezseucM/wAdZ0S/ehlSNObl4K+O6HLDgQ3wVemDf4m1Fh93znmWBt\n65dDX1gOXNRW8fV15I2+Burxp8dxQCIJa0oXeCteDBbYw74UhbJJDh1JAoGANEgv\n20WEU0iWYJgYzbK7ueyugXQyKfTu8HSIlLpRTlWzZWsqZcJtHts++OZyF9xrHv+0\nsfr4kaKPKbIvybEYpD3TR6ugWnveHjfgNilkCqaPqC2uHsQRmBH/NfLHYvvSgvSb\nwCTSSDPoQNF+7PyLnnEvFcNc5xvOW5y9dn87FAcCgYEAvKB8M37/ndhX+O/fLSNa\nbj9gRxVSNqQ/gcHtoqA6mgTa4nbUrdVHqQ1e8oZssZu/687dBIEJqjVuZJqY4hb4\nflzyQj5ka+2sR/3Pq0PTniB/Upnsl+R8NtAl3CF+bfKMSe7pkI57WIjjjnBaK7Bs\nSUWYaeRCcQGSLZcALo0V3NY=\n-----END PRIVATE KEY-----\n",
+  "client_email": "sbotech1@dogwood-courier-406511.iam.gserviceaccount.com",
+  "client_id": "115675890041657202884",
+  "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+  "token_uri": "https://oauth2.googleapis.com/token",
+  "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+  "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/sbotech1%40dogwood-courier-406511.iam.gserviceaccount.com",
+  "universe_domain": "googleapis.com"
+}
