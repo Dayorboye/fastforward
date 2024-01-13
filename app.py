@@ -177,9 +177,7 @@ load_to_google_sheets(transformed_data, google_sheet_url, sheet_name)
 # Display the DataFrame directly in the cell output
 gsheetid = '1uC6CVvxTUM3fmXRB7ec7xoF9hIcPVpB9SECXgxqSmX0'
 sheet_name = 'Inventory_Sales_Summary'
-
-gsheet_url = 'https://docs.google.com/spreadsheets/d/{}/gviz/tq?tqx=out:csv&sheet={}'.format(gsheetid,sheet_name)
-
+gsheet_url = 'https://docs.google.com/spreadsheets/d/{}/gviz/tq?tqx=out:csv&sheet={}'.format(gsheetid, sheet_name)
 url = gsheet_url
 df = pd.read_csv(url)
 
@@ -202,17 +200,18 @@ def degittramsform(appended_table):
     return appended_table
 
 
-df = degittramsform(df)
-
-# Assuming the columns are named as in your previous example
-columns_to_select = ['PARTNER NAME','COUNTRY','WEEK','DEPARTMENT','ITEM CODE(16 DIGITS)',
-                     'CLASSNAME','SEASON','STYLE NAME','COLOUR NAME','DESCRIPTION',
-                     'ORIGINAL RRP','SALES VALUE LAST WEEK LOCAL','SALES UNITS LAST WEEK',
-                     'STORE STOCK UNITS']
-
-# Create a new DataFrame with selected columns using .loc[]
-df = df.loc[:, columns_to_select]
-
+# Function to load data into the DataFrame
+def load_data():
+    global df
+    df = pd.read_csv(url)
+    df = degittramsform(df)
+    columns_to_select = ['PARTNER NAME', 'COUNTRY', 'WEEK', 'DEPARTMENT', 'ITEM CODE(16 DIGITS)',
+                         'CLASSNAME', 'SEASON', 'STYLE NAME', 'COLOUR NAME', 'DESCRIPTION',
+                         'ORIGINAL RRP', 'SALES VALUE LAST WEEK LOCAL', 'SALES UNITS LAST WEEK',
+                         'STORE STOCK UNITS']
+    df = df.loc[:, columns_to_select]
+    return df
+df = load_data()
 
 
 Revenue = df['ORIGINAL RRP'].sum().round(2)
@@ -548,7 +547,11 @@ def build_quick_stats_panel():
             
             html.Div(
                 id="utility-card",
-                children=[daq.StopButton(id="stop-button", size=160, n_clicks=0)],
+                children=[
+                    html.A(
+                        html.Button(children="REFRESH", id="refresh-button"),
+                    ),]
+                # children=[daq.StopButton(id="stop-button", size=160, n_clicks=0)],
             ),
         ],
     )
@@ -660,6 +663,22 @@ def update_text_elements(selected_week):
 
 
 
+
+# Callback to update df on "REFRESH" button click
+@app.callback(
+    Output("value-setter-store", "data"),  # You can use this to trigger updates, it doesn't need to return anything
+    [Input("refresh-button", "n_clicks")],
+    prevent_initial_call=True,
+)
+def refresh_data(n_clicks):
+    global df  # Ensure df is treated as a global variable
+    if n_clicks > 0:
+        # Call the load_data() function to refresh the data and update df
+        df = load_data()
+        
+
+    # Return any data (can be None) to trigger the update
+    return df
 
 
 
