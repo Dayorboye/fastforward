@@ -674,11 +674,11 @@ def refresh_data(n_clicks):
     global df  # Ensure df is treated as a global variable
     if n_clicks > 0:
         # Call the load_data() function to refresh the data and update df
-        df = load_data()
+        load_data()
         
 
     # Return any data (can be None) to trigger the update
-    return df
+    return
 
 
 
