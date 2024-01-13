@@ -620,7 +620,7 @@ app.layout = html.Div(
         build_banner(),
         dcc.Interval(
             id="interval-component",
-            interval=2 * 60 * 1000,  # update every 2 minutes
+            interval=60 * 1000,  # update every 1 minutes
             n_intervals=50,  # start at batch 50
             disabled=True,
         ),
@@ -725,12 +725,17 @@ def download_data(n_clicks):
 
 @app.callback(
     [Output("app-content", "children"), Output("interval-component", "n_intervals")],
-    [Input("app-tabs", "value")],
+    [Input("app-tabs", "value"), Input("interval-component", "n_intervals")],
     [State("n-interval-stage", "data")],
 )
-def render_tab_content(tab_switch, stopped_interval):
+def render_tab_content(tab_switch, interval_n, stopped_interval):
+    if interval_n > stopped_interval:
+        # If the interval has passed the last stopped interval, update the data
+        # Add your data update logic here
+        load_data()
+
     if tab_switch == "tab1":
-        return build_tab_1(), stopped_interval
+        return build_tab_1(), interval_n
     return (
         html.Div(
             id="status-container",
@@ -738,13 +743,12 @@ def render_tab_content(tab_switch, stopped_interval):
                 build_quick_stats_panel(),
                 html.Div(
                     id="graphs-container",
-                    children=[build_top_panel(stopped_interval), build_chart_panel()],
+                    children=[build_top_panel(interval_n), build_chart_panel()],
                 ),
             ],
         ),
-        stopped_interval,
+        interval_n,
     )
-
 
 # ======= update progress gauge =========
 
