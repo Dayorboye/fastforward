@@ -678,7 +678,7 @@ def refresh_data(n_clicks):
         
 
     # Return any data (can be None) to trigger the update
-    return
+    return None
 
 
 
