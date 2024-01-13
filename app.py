@@ -19,9 +19,7 @@ from dash import dash
 from dash.dash import no_update
 import gspread
 from oauth2client.service_account import ServiceAccountCredentials
-import pymysql
-from sqlalchemy import create_engine
-import socket
+from gspread_dataframe import set_with_dataframe
 import warnings
 warnings.simplefilter(action='ignore', category=FutureWarning)
 
@@ -37,8 +35,6 @@ app.title = "Sales Report Engine SRE"
 server = app.server
 app.config["suppress_callback_exceptions"] = True
 
-# APP_PATH = str(pathlib.Path(__file__).parent.resolve())
-# Abuja_branch_dataset = pd.read_csv(os.path.join(APP_PATH, os.path.join("data", "Abuja_branch_dataset.csv")))
 
 
 # Create Data Pipeline
@@ -79,10 +75,10 @@ def format_to_16_digits(x):
 
 def transform(appended_table,companyName,countryName):
     
-    appended_table.drop(index=appended_table.index[:5], axis=0, inplace=True)
+    appended_table.drop(index=appended_table.index[:5],axis=0, inplace=True)
     appended_table.columns = appended_table.iloc[0]
     appended_table = appended_table[1:]
-    appended_table.dropna(axis=1, how='all', inplace=True)
+    appended_table.dropna(axis = 1, how = 'all', inplace = True)
     cols = ['', 'Department', 'Week', '', 'Vendor', '', 'Item Name', '',
        'Item Description', '', 'Attribute', '', 'Size', '', 'Item #', '',
        'UPC', '', 'Alternate Lookup', '', 'Dept Code', '', 'Vendor Code', '',
@@ -129,25 +125,7 @@ def transform(appended_table,companyName,countryName):
     appended_table['ID'] = np.arange(1, len(appended_table)+1)
     return appended_table
 
-  
 
-    
-def load_to_sql(appended_table, output_file):
-    
-    # Write the final appended table to an Excel file
-    appended_table.to_sql(output_file, sql_connection, if_exists='replace', index=False)
-    print(f"All tables successfully appended and saved to {output_file}")
-    
-
-# Replace the placeholders with your actual database credentials
-host = 'sql3.freesqldatabase.com'
-database_name = 'sql3675260'
-user = 'sql3675260'
-password = 'tnqjLxZuFv'
-port = '3306'
-
-# Create an SQLAlchemy engine to connect to the MySQL database
-sql_connection = create_engine(f"mysql+pymysql://{user}:{password}@{host}:{port}/{database_name}")  
 
 sheet_key = "1e7ZZBRt37kEElHnyFF_VV_4bVRqjy3oXNw8cY1OhIcw"  # Replace with your Google Sheet key
 output_file = "extracted_tables"  # Replace with your desired output file name
@@ -155,34 +133,76 @@ extracted_data = extract_and_append_all_tables(sheet_key)
 coName = 'SMARTMARTLTD'
 countryName = 'NIGERIA'
 transformed_data = transform(extracted_data,coName,countryName)
-load_to_sql(transformed_data, output_file)
 
-# Optimize loading by using a SQL query instead of directly loading the entire table
-# Modify the query as per your requirements to load specific columns or apply filters
-query = "SELECT * FROM extracted_tables"
 
-# Use the read_sql() function with the SQL query to load data into a DataFrame
-try:
-    # Optimize loading by using a SQL query instead of directly loading the entire table
-    # Modify the query as per your requirements to load specific columns or apply filters
-    query = "SELECT * FROM extracted_tables"
 
-    # Use the read_sql() function with the SQL query to load data into a DataFrame
-    # Adjust chunksize as needed; it specifies the number of rows fetched at a time
-    chunksize = 10000  # Experiment with different values for optimal performance
-    df_chunks = pd.read_sql(query, con=sql_connection, chunksize=chunksize)
-    
-    # Initialize an empty DataFrame to concatenate chunks
-    df = pd.concat(df_chunks)
-    
-    # Now df contains the entire table data
-    print("Data loaded successfully.")
-except Exception as e:
-    print("Error occurred while loading data:", str(e))
-    df = pd.DataFrame()  # Define an empty DataFrame to handle the case of failure to load data
+def authenticate_google_sheets():
+    # Use Google Sheets API credentials
+    scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
+    credentials = ServiceAccountCredentials.from_json_keyfile_name("dogwood-courier-406511-c8a6ccfe04e0.json", scope)
+    gc = gspread.authorize(credentials)
+    return gc
+
+def load_to_google_sheets(data_frame, sheet_url, sheet_name):
+    # Extract sheet key from the sheet URL
+    sheet_key = sheet_url.split("/")[5]
+
+    # Authenticate with Google Sheets
+    gc = authenticate_google_sheets()
+
+    # Open the Google Sheet by key
+    workbook = gc.open_by_key(sheet_key)
+
+    # Get the specified sheet by name; create it if not exists
+    try:
+        worksheet = workbook.worksheet(sheet_name)
+    except gspread.exceptions.WorksheetNotFound:
+        worksheet = workbook.add_worksheet(title=sheet_name, rows="100", cols="20")
+
+    # Clear the existing data in the sheet
+    worksheet.clear()
+
+    # Write the DataFrame to the Google Sheet
+    set_with_dataframe(worksheet, data_frame)
+
+    print(f"Data successfully loaded into Google Sheet '{sheet_name}' in the workbook with key '{sheet_key}'")
+
+# Replace this with the actual URL of your Google Sheet
+google_sheet_url = "https://docs.google.com/spreadsheets/d/1uC6CVvxTUM3fmXRB7ec7xoF9hIcPVpB9SECXgxqSmX0/edit#gid=0"
+sheet_name = "Inventory_Sales_Summary"
+
+# Load the transformed data into Google Sheets
+load_to_google_sheets(transformed_data, google_sheet_url, sheet_name)
 
 # Display the DataFrame directly in the cell output
-df = df
+gsheetid = '1uC6CVvxTUM3fmXRB7ec7xoF9hIcPVpB9SECXgxqSmX0'
+sheet_name = 'Inventory_Sales_Summary'
+
+gsheet_url = 'https://docs.google.com/spreadsheets/d/{}/gviz/tq?tqx=out:csv&sheet={}'.format(gsheetid,sheet_name)
+
+url = gsheet_url
+df = pd.read_csv(url)
+
+
+def degittramsform(appended_table):
+    appended_table['ITEM CODE(16 DIGITS)'] = appended_table['ITEM CODE(16 DIGITS)'].astype(str)
+
+    problematic_values = []
+
+    for idx, value in appended_table['ITEM CODE(16 DIGITS)'].items():
+        try:
+            appended_table.at[idx, 'ITEM CODE(16 DIGITS)'] = format_to_16_digits(float(value))
+        except ValueError:
+            problematic_values.append(value)
+            appended_table.at[idx, 'ITEM CODE(16 DIGITS)'] = None
+
+    if problematic_values:
+        print(f"Problematic values in 'ITEM CODE(16 DIGITS)' column: {problematic_values}")
+        
+    return appended_table
+
+
+df = degittramsform(df)
 
 # Assuming the columns are named as in your previous example
 columns_to_select = ['PARTNER NAME','COUNTRY','WEEK','DEPARTMENT','ITEM CODE(16 DIGITS)',
@@ -345,6 +365,10 @@ def drawLine_RavrgT():
 
 
 
+
+
+
+
 def build_banner():
     return html.Div(
         id="banner",
@@ -366,7 +390,7 @@ def build_banner():
                     ),
                     html.A(
                         html.Button(children="UPLOAD NEW DATA"),
-                        href="https://docs.google.com/spreadsheets/d/1e7ZZBRt37kEElHnyFF_VV_4bVRqjy3oXNw8cY1OhIcw/edit#gid=30863933",
+                        href="https://docs.google.com/spreadsheets/d/1e7ZZBRt37kEElHnyFF_VV_4bVRqjy3oXNw8cY1OhIcw/edit#gid=256296495",
                     ),
                 ],
             ),
@@ -710,4 +734,4 @@ def render_tab_content(tab_switch, stopped_interval):
 
 # Running the server
 if __name__ == "__main__":
-    app.run_server(debug=False, port=8050)
+    app.run_server(debug=False, port=8051)
