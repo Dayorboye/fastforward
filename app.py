@@ -1,30 +1,23 @@
 import os
-import pathlib
+from datetime import date, datetime
 
 import dash
-import dash_core_components as dcc
-import dash_html_components as html
-from dash.dependencies import Input, Output, State
-import dash_table
-import plotly.graph_objs as go
-import dash_daq as daq
-import plotly.express as px
-import pandas as pd
-import numpy as np
 from dash import dash_table
+from dash import html, dcc
+from dash.dependencies import Input, Output, State
 import dash_bootstrap_components as dbc
-from datetime import date, datetime
-from dash.exceptions import PreventUpdate
-from dash import dash
-from dash.dash import no_update
+import dash_daq as daq
 import gspread
-from oauth2client.service_account import ServiceAccountCredentials
+import numpy as np
+import pandas as pd
+import plotly.express as px
+import plotly.graph_objs as go
 from gspread_dataframe import set_with_dataframe
-import warnings
-warnings.simplefilter(action='ignore', category=FutureWarning)
+from oauth2client.service_account import ServiceAccountCredentials
+from dash.exceptions import PreventUpdate
 
-
-
+# Disable pandas warning for assignment on copy
+pd.options.mode.chained_assignment = None
 
 app = dash.Dash(
     __name__,
@@ -40,6 +33,7 @@ app.config["suppress_callback_exceptions"] = True
 # Create Data Pipeline
 
 
+# Google Sheets API credentials
 def extract_and_append_all_tables(sheet_key):
     # Use Google Sheets API credentials
     scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
@@ -48,7 +42,6 @@ def extract_and_append_all_tables(sheet_key):
 
     # Open the Google Sheet by key
     workbook = gc.open_by_key(sheet_key)
-
     # Initialize an empty DataFrame to store the appended tables
     appended_table = pd.DataFrame()
 
@@ -56,10 +49,8 @@ def extract_and_append_all_tables(sheet_key):
     for sheet in workbook.worksheets():
         # Get all values from the sheet
         data = sheet.get_all_values()
-
         # Convert the data to a DataFrame
         df = pd.DataFrame(data[1:], columns=data[0])
-
         # Append the DataFrame to the main table
         appended_table = appended_table.append(df, ignore_index=True)
     return appended_table
@@ -73,7 +64,7 @@ def format_to_16_digits(x):
     return formatted_x
 
 
-def transform(appended_table,companyName,countryName):
+def transform_data(appended_table, company_name, country_name):
     
     appended_table.drop(index=appended_table.index[:5],axis=0, inplace=True)
     appended_table.columns = appended_table.iloc[0]
@@ -86,8 +77,8 @@ def transform(appended_table,companyName,countryName):
        'SKU', '', 'Quick Pick Group', '', 'Ext Price(Inventory)', '', 'Qty(Inventory)', '',
        'Ext Cost(Inventory', '', 'Ext Price(Sold)', '', 'Qty(Sold)', '', 'Ext Cost(Sold)']
     appended_table.columns = cols
-    appended_table['name'] = companyName
-    appended_table['country'] = countryName
+    appended_table['name'] = company_name
+    appended_table['country'] = country_name
     appended_table = appended_table[['name','country','Week','Department','SKU','CATEGORY','SEASON',
                                      'STYLE NAME/INT. CAT','Attribute','Item Description','Ext Price(Inventory)',
                                      'Ext Price(Sold)','Qty(Sold)','Qty(Inventory)']]
@@ -96,44 +87,10 @@ def transform(appended_table,companyName,countryName):
             'STYLE NAME','COLOUR NAME','DESCRIPTION','ORIGINAL RRP','SALES VALUE LAST WEEK LOCAL',
             'SALES UNITS LAST WEEK','STORE STOCK UNITS']
     appended_table.columns = colss
-    appended_table['SALES VALUE LAST WEEK LOCAL'] = appended_table['SALES VALUE LAST WEEK LOCAL'].str.replace(',','')
-    appended_table['ORIGINAL RRP'] = appended_table['ORIGINAL RRP'].str.replace(',','')    
-    appended_table['STORE STOCK UNITS'] = appended_table['STORE STOCK UNITS'].str.replace(',','')
-#     appended_table = appended_table.astype({'WEEK':'float','ORIGINAL RRP':'float','SALES VALUE LAST WEEK LOCAL':'float','SALES UNITS LAST WEEK':'float','STORE STOCK UNITS':'float'})
-    numeric_cols = ['WEEK', 'ORIGINAL RRP', 'SALES VALUE LAST WEEK LOCAL', 'SALES UNITS LAST WEEK', 'STORE STOCK UNITS']
 
-    for col in numeric_cols:
-        appended_table[col] = pd.to_numeric(appended_table[col], errors='coerce')
-
-    appended_table = appended_table.dropna(subset=numeric_cols)  # Drop rows with NaN values after conversion
     appended_table = appended_table.iloc[:-1]
-        # Applying the function to the DataFrame column
-    appended_table['ITEM CODE(16 DIGITS)'] = appended_table['ITEM CODE(16 DIGITS)'].astype(str)
-
-    problematic_values = []
-
-    for idx, value in appended_table['ITEM CODE(16 DIGITS)'].items():
-        try:
-            appended_table.at[idx, 'ITEM CODE(16 DIGITS)'] = format_to_16_digits(float(value))
-        except ValueError:
-            problematic_values.append(value)
-            appended_table.at[idx, 'ITEM CODE(16 DIGITS)'] = None
-
-    if problematic_values:
-        print(f"Problematic values in 'ITEM CODE(16 DIGITS)' column: {problematic_values}")
     
-    appended_table['ID'] = np.arange(1, len(appended_table)+1)
     return appended_table
-
-
-
-sheet_key = "1e7ZZBRt37kEElHnyFF_VV_4bVRqjy3oXNw8cY1OhIcw"  # Replace with your Google Sheet key
-output_file = "extracted_tables"  # Replace with your desired output file name
-extracted_data = extract_and_append_all_tables(sheet_key)
-coName = 'SMARTMARTLTD'
-countryName = 'NIGERIA'
-transformed_data = transform(extracted_data,coName,countryName)
-
 
 
 def authenticate_google_sheets():
@@ -167,19 +124,23 @@ def load_to_google_sheets(data_frame, sheet_url, sheet_name):
 
     print(f"Data successfully loaded into Google Sheet '{sheet_name}' in the workbook with key '{sheet_key}'")
 
-# Replace this with the actual URL of your Google Sheet
+
+company_name = 'SMARTMARTLTD'
+country_name = 'NIGERIA'
+
+sheet_key = "1e7ZZBRt37kEElHnyFF_VV_4bVRqjy3oXNw8cY1OhIcw"  # Replace with your Google Sheet key
+
+
+# Apply transformations
+appended_table = extract_and_append_all_tables(sheet_key)
+transformed_data = transform_data(appended_table, company_name, country_name)
+
+
+# Load transformed data to Google Sheets
 google_sheet_url = "https://docs.google.com/spreadsheets/d/1uC6CVvxTUM3fmXRB7ec7xoF9hIcPVpB9SECXgxqSmX0/edit#gid=0"
 sheet_name = "Inventory_Sales_Summary"
-
-# Load the transformed data into Google Sheets
 load_to_google_sheets(transformed_data, google_sheet_url, sheet_name)
 
-# Display the DataFrame directly in the cell output
-gsheetid = '1uC6CVvxTUM3fmXRB7ec7xoF9hIcPVpB9SECXgxqSmX0'
-sheet_name = 'Inventory_Sales_Summary'
-gsheet_url = 'https://docs.google.com/spreadsheets/d/{}/gviz/tq?tqx=out:csv&sheet={}'.format(gsheetid, sheet_name)
-url = gsheet_url
-df = pd.read_csv(url)
 
 
 def degittramsform(appended_table):
@@ -200,18 +161,35 @@ def degittramsform(appended_table):
     return appended_table
 
 
+
 # Function to load data into the DataFrame
-def load_data():
-    global df
-    df = pd.read_csv(url)
-    df = degittramsform(df)
+def load_data(gsheet_url):
+    df = pd.read_csv(gsheet_url)
+    df['SALES VALUE LAST WEEK LOCAL'] = df['SALES VALUE LAST WEEK LOCAL'].str.replace(',','')
+    df['ORIGINAL RRP'] = df['ORIGINAL RRP'].str.replace(',','')    
+    df['STORE STOCK UNITS'] = df['STORE STOCK UNITS'].str.replace(',','')
     columns_to_select = ['PARTNER NAME', 'COUNTRY', 'WEEK', 'DEPARTMENT', 'ITEM CODE(16 DIGITS)',
                          'CLASSNAME', 'SEASON', 'STYLE NAME', 'COLOUR NAME', 'DESCRIPTION',
                          'ORIGINAL RRP', 'SALES VALUE LAST WEEK LOCAL', 'SALES UNITS LAST WEEK',
                          'STORE STOCK UNITS']
     df = df.loc[:, columns_to_select]
+    
+    numeric_cols = ['WEEK', 'ORIGINAL RRP', 'SALES VALUE LAST WEEK LOCAL', 'SALES UNITS LAST WEEK', 'STORE STOCK UNITS']
+
+    for col in numeric_cols:
+        df[col] = pd.to_numeric(df[col], errors='coerce')
+
+    df = df.dropna(subset=numeric_cols)  # Drop rows with NaN values after conversion
+    df = degittramsform(df)
+    df['ID'] = np.arange(1, len(df)+1)
+
     return df
-df = load_data()
+
+# Load data into DataFrame from Google Sheets
+gsheetid = '1uC6CVvxTUM3fmXRB7ec7xoF9hIcPVpB9SECXgxqSmX0'
+sheet_name = 'Inventory_Sales_Summary'
+gsheet_url = f'https://docs.google.com/spreadsheets/d/{gsheetid}/gviz/tq?tqx=out:csv&sheet={sheet_name}'
+df = load_data(gsheet_url)
 
 
 Revenue = df['ORIGINAL RRP'].sum().round(2)
@@ -349,7 +327,7 @@ def drawLine_RavrgT():
                         line_color='#91dfd2' )]
                     ).update_layout(
                         title_text='Weekly Stock Unit',
-                        height=400, width= 3500,
+                        height=400, width= 900,
                         paper_bgcolor='#161a28',
                         plot_bgcolor='#161a28',
                         font=dict(size=10,color='white')
@@ -620,7 +598,7 @@ app.layout = html.Div(
         build_banner(),
         dcc.Interval(
             id="interval-component",
-            interval=60 * 1000,  # update every 1 minutes
+            interval= 60 * 1000,  # update every 1 minutes
             n_intervals=50,  # start at batch 50
             disabled=True,
         ),
@@ -674,7 +652,10 @@ def refresh_data(n_clicks):
     global df  # Ensure df is treated as a global variable
     if n_clicks > 0:
         # Call the load_data() function to refresh the data and update df
-        load_data()
+        appended_table = extract_and_append_all_tables(sheet_key)
+        transformed_data = transform_data(appended_table, company_name, country_name)
+        load_to_google_sheets(transformed_data, google_sheet_url, sheet_name)
+        df = load_data(gsheet_url)
         
 
     # Return any data (can be None) to trigger the update
