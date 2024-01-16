@@ -101,11 +101,11 @@ def transform_data(appended_table, company_name, country_name):
     appended_table.columns = cols
     appended_table['name'] = company_name
     appended_table['country'] = country_name
-    appended_table = appended_table[['name','country','Week','Department','SKU','CATEGORY','SEASON',
+    appended_table = appended_table[['name','country','Week','Branch','Department','SKU','CATEGORY','SEASON',
                                      'STYLE NAME/INT. CAT','Attribute','Item Description','Ext Price(Inventory)',
                                      'Ext Price(Sold)','Qty(Sold)','Qty(Inventory)']]
     
-    colss = ['PARTNER NAME','COUNTRY','WEEK','DEPARTMENT','ITEM CODE(16 DIGITS)','CLASSNAME','SEASON',
+    colss = ['PARTNER NAME','COUNTRY','WEEK','STORE','DEPARTMENT','ITEM CODE(16 DIGITS)','CLASSNAME','SEASON',
             'STYLE NAME','COLOUR NAME','DESCRIPTION','ORIGINAL RRP','SALES VALUE LAST WEEK LOCAL',
             'SALES UNITS LAST WEEK','STORE STOCK UNITS']
     appended_table.columns = colss
@@ -129,6 +129,7 @@ def transform_data(appended_table, company_name, country_name):
     appended_table = appended_table.iloc[:-1]
     
     return appended_table
+
 
 
 
@@ -204,7 +205,7 @@ def load_data(gsheet_url):
     df['ORIGINAL RRP'] = df['ORIGINAL RRP'].str.replace(',', '')
     df['STORE STOCK UNITS'] = df['STORE STOCK UNITS'].str.replace(',', '')
 
-    columns_to_select = ['PARTNER NAME', 'COUNTRY', 'WEEK', 'DEPARTMENT', 'ITEM CODE(16 DIGITS)',
+    columns_to_select = ['PARTNER NAME', 'COUNTRY', 'STORE','WEEK', 'DEPARTMENT', 'ITEM CODE(16 DIGITS)',
                          'CLASSNAME', 'SEASON', 'STYLE NAME', 'COLOUR NAME', 'DESCRIPTION',
                          'ORIGINAL RRP', 'SALES VALUE LAST WEEK LOCAL', 'SALES UNITS LAST WEEK',
                          'STORE STOCK UNITS']
