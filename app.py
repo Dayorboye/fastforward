@@ -68,14 +68,14 @@ def extract_and_append_all_tables(sheet_key):
             df.dropna(axis=1, how='all', inplace=True)
 
             # Append the cleaned DataFrame to the main table
-            df = df.append(df, ignore_index=True)
+            appended_table = appended_table.append(df, ignore_index=True)
             
             # Update the global total rows processed
             global_total_rows_processed += len(df)
         except Exception as e:
             print(f"Error appending DataFrame from sheet '{sheet.title}': {e}")
 
-    return df
+    return appended_table
 
 
 # Function to format integers to have 16 digits
@@ -86,7 +86,7 @@ def format_to_16_digits(x):
     return formatted_x
 
 
-def transform_data(df, company_name, country_name):
+def transform_data(appended_table, company_name, country_name):
     
     cols = ['', 'Department', 'Week', '', 'Vendor', '', 'Item Name', '',
        'Item Description', '', 'Attribute', '', 'Size', '', 'Item #', '',
@@ -94,21 +94,22 @@ def transform_data(df, company_name, country_name):
        'CATEGORY', '', 'GENDER', '', 'SEASON', '', 'STYLE NAME/INT. CAT', '',
        'SKU', '', 'Quick Pick Group', '', 'Ext Price(Inventory)', '', 'Qty(Inventory)', '',
        'Ext Cost(Inventory', '', 'Ext Price(Sold)', '', 'Qty(Sold)', '', 'Ext Cost(Sold)']
-    df.columns = cols
-    df['name'] = company_name
-    df['country'] = country_name
-    df = df[['name','country','Week','Department','SKU','CATEGORY','SEASON',
+    appended_table.columns = cols
+    appended_table['name'] = company_name
+    appended_table['country'] = country_name
+    appended_table = appended_table[['name','country','Week','Department','SKU','CATEGORY','SEASON',
                                      'STYLE NAME/INT. CAT','Attribute','Item Description','Ext Price(Inventory)',
                                      'Ext Price(Sold)','Qty(Sold)','Qty(Inventory)']]
     
     colss = ['PARTNER NAME','COUNTRY','WEEK','DEPARTMENT','ITEM CODE(16 DIGITS)','CLASSNAME','SEASON',
             'STYLE NAME','COLOUR NAME','DESCRIPTION','ORIGINAL RRP','SALES VALUE LAST WEEK LOCAL',
             'SALES UNITS LAST WEEK','STORE STOCK UNITS']
-    df.columns = colss
+    appended_table.columns = colss
 
-    df = df.iloc[:-1]
+    appended_table = appended_table.iloc[:-1]
     
-    return df
+    return appended_table
+
 
 
 def authenticate_google_sheets():
@@ -519,7 +520,7 @@ def build_quick_stats_panel():
                 id='week-input', 
                 type='number', 
                 step=1, 
-                value= 31, 
+                value= 1, 
                 style={
                     'margin': '0 0 20px 0px', 
                     'background-color': '#161a28', 
