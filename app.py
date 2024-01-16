@@ -42,18 +42,40 @@ def extract_and_append_all_tables(sheet_key):
 
     # Open the Google Sheet by key
     workbook = gc.open_by_key(sheet_key)
+
     # Initialize an empty DataFrame to store the appended tables
     appended_table = pd.DataFrame()
+
+    # Global variable to keep track of the total rows processed
+    global_total_rows_processed = 0
 
     # Iterate through each sheet in the workbook
     for sheet in workbook.worksheets():
         # Get all values from the sheet
         data = sheet.get_all_values()
+
         # Convert the data to a DataFrame
         df = pd.DataFrame(data[1:], columns=data[0])
-        # Append the DataFrame to the main table
-        appended_table = appended_table.append(df, ignore_index=True)
-    return appended_table
+
+        try:
+            # Add a new column with the global unique index
+#             df['UniqueIndex'] = range(global_total_rows_processed, global_total_rows_processed + len(df))
+            
+            # Add the specified code to clean up the DataFrame
+            df.drop(index=df.index[:5],axis=0, inplace=True)
+            df.columns = df.iloc[0]
+            df = df[1:]
+            df.dropna(axis=1, how='all', inplace=True)
+
+            # Append the cleaned DataFrame to the main table
+            df = df.append(df, ignore_index=True)
+            
+            # Update the global total rows processed
+            global_total_rows_processed += len(df)
+        except Exception as e:
+            print(f"Error appending DataFrame from sheet '{sheet.title}': {e}")
+
+    return df
 
 
 # Function to format integers to have 16 digits
@@ -64,33 +86,29 @@ def format_to_16_digits(x):
     return formatted_x
 
 
-def transform_data(appended_table, company_name, country_name):
+def transform_data(df, company_name, country_name):
     
-    appended_table.drop(index=appended_table.index[:5],axis=0, inplace=True)
-    appended_table.columns = appended_table.iloc[0]
-    appended_table = appended_table[1:]
-    appended_table.dropna(axis = 1, how = 'all', inplace = True)
     cols = ['', 'Department', 'Week', '', 'Vendor', '', 'Item Name', '',
        'Item Description', '', 'Attribute', '', 'Size', '', 'Item #', '',
        'UPC', '', 'Alternate Lookup', '', 'Dept Code', '', 'Vendor Code', '',
        'CATEGORY', '', 'GENDER', '', 'SEASON', '', 'STYLE NAME/INT. CAT', '',
        'SKU', '', 'Quick Pick Group', '', 'Ext Price(Inventory)', '', 'Qty(Inventory)', '',
        'Ext Cost(Inventory', '', 'Ext Price(Sold)', '', 'Qty(Sold)', '', 'Ext Cost(Sold)']
-    appended_table.columns = cols
-    appended_table['name'] = company_name
-    appended_table['country'] = country_name
-    appended_table = appended_table[['name','country','Week','Department','SKU','CATEGORY','SEASON',
+    df.columns = cols
+    df['name'] = company_name
+    df['country'] = country_name
+    df = df[['name','country','Week','Department','SKU','CATEGORY','SEASON',
                                      'STYLE NAME/INT. CAT','Attribute','Item Description','Ext Price(Inventory)',
                                      'Ext Price(Sold)','Qty(Sold)','Qty(Inventory)']]
     
     colss = ['PARTNER NAME','COUNTRY','WEEK','DEPARTMENT','ITEM CODE(16 DIGITS)','CLASSNAME','SEASON',
             'STYLE NAME','COLOUR NAME','DESCRIPTION','ORIGINAL RRP','SALES VALUE LAST WEEK LOCAL',
             'SALES UNITS LAST WEEK','STORE STOCK UNITS']
-    appended_table.columns = colss
+    df.columns = colss
 
-    appended_table = appended_table.iloc[:-1]
+    df = df.iloc[:-1]
     
-    return appended_table
+    return df
 
 
 def authenticate_google_sheets():
@@ -165,15 +183,23 @@ def degittramsform(appended_table):
 # Function to load data into the DataFrame
 def load_data(gsheet_url):
     df = pd.read_csv(gsheet_url)
-    df['SALES VALUE LAST WEEK LOCAL'] = df['SALES VALUE LAST WEEK LOCAL'].str.replace(',','')
-    df['ORIGINAL RRP'] = df['ORIGINAL RRP'].str.replace(',','')    
-    df['STORE STOCK UNITS'] = df['STORE STOCK UNITS'].str.replace(',','')
+
+    # Convert relevant columns to string
+    string_cols = ['WEEK','SALES VALUE LAST WEEK LOCAL', 'ORIGINAL RRP', 'STORE STOCK UNITS']
+    df[string_cols] = df[string_cols].astype(str)
+
+    # Replace commas in string columns
+    df['WEEK'] = df['WEEK'].str.replace(',', '')
+    df['SALES VALUE LAST WEEK LOCAL'] = df['SALES VALUE LAST WEEK LOCAL'].str.replace(',', '')
+    df['ORIGINAL RRP'] = df['ORIGINAL RRP'].str.replace(',', '')
+    df['STORE STOCK UNITS'] = df['STORE STOCK UNITS'].str.replace(',', '')
+
     columns_to_select = ['PARTNER NAME', 'COUNTRY', 'WEEK', 'DEPARTMENT', 'ITEM CODE(16 DIGITS)',
                          'CLASSNAME', 'SEASON', 'STYLE NAME', 'COLOUR NAME', 'DESCRIPTION',
                          'ORIGINAL RRP', 'SALES VALUE LAST WEEK LOCAL', 'SALES UNITS LAST WEEK',
                          'STORE STOCK UNITS']
     df = df.loc[:, columns_to_select]
-    
+
     numeric_cols = ['WEEK', 'ORIGINAL RRP', 'SALES VALUE LAST WEEK LOCAL', 'SALES UNITS LAST WEEK', 'STORE STOCK UNITS']
 
     for col in numeric_cols:
@@ -181,7 +207,7 @@ def load_data(gsheet_url):
 
     df = df.dropna(subset=numeric_cols)  # Drop rows with NaN values after conversion
     df = degittramsform(df)
-    df['ID'] = np.arange(1, len(df)+1)
+    df['ID'] = np.arange(1, len(df) + 1)
 
     return df
 
@@ -437,7 +463,7 @@ def build_tab_1():
                                         ),
 
                                         dbc.Input(id='week-input', type='number',
-                                            step=1, value=31,
+                                            step=1, value=1,
                                         style={
                                             'margin-left': '30px', 
                                             'background-color': '#161a28', 
