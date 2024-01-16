@@ -87,7 +87,6 @@ def format_to_16_digits(x):
 
 
 def transform_data(appended_table, company_name, country_name):
-    
     cols = ['', 'Department', 'Week', '', 'Vendor', '', 'Item Name', '',
        'Item Description', '', 'Attribute', '', 'Size', '', 'Item #', '',
        'UPC', '', 'Alternate Lookup', '', 'Dept Code', '', 'Vendor Code', '',
@@ -105,10 +104,27 @@ def transform_data(appended_table, company_name, country_name):
             'STYLE NAME','COLOUR NAME','DESCRIPTION','ORIGINAL RRP','SALES VALUE LAST WEEK LOCAL',
             'SALES UNITS LAST WEEK','STORE STOCK UNITS']
     appended_table.columns = colss
+    
+    appended_table['ITEM CODE(16 DIGITS)'] = appended_table['ITEM CODE(16 DIGITS)'].astype(str)
+
+    problematic_values = []
+
+    for idx, value in appended_table['ITEM CODE(16 DIGITS)'].items():
+        try:
+            # Skip the conversion attempt for empty strings
+            if value != '':
+                appended_table.at[idx, 'ITEM CODE(16 DIGITS)'] = format_to_16_digits(float(value))
+        except ValueError:
+            problematic_values.append(value)
+            appended_table.at[idx, 'ITEM CODE(16 DIGITS)'] = None
+
+    if problematic_values:
+        print(f"Problematic values in 'ITEM CODE(16 DIGITS)' column: {problematic_values}")
 
     appended_table = appended_table.iloc[:-1]
     
     return appended_table
+
 
 
 
@@ -138,10 +154,16 @@ def load_to_google_sheets(data_frame, sheet_url, sheet_name):
     # Clear the existing data in the sheet
     worksheet.clear()
 
+    # Manually convert problematic columns to strings to avoid numeric conversion issues
+    for column in data_frame.columns:
+        if data_frame[column].dtype == 'float64':
+            data_frame[column] = data_frame[column].astype(str)
+
     # Write the DataFrame to the Google Sheet
     set_with_dataframe(worksheet, data_frame)
 
     print(f"Data successfully loaded into Google Sheet '{sheet_name}' in the workbook with key '{sheet_key}'")
+
 
 
 company_name = 'SMARTMARTLTD'
@@ -159,25 +181,6 @@ transformed_data = transform_data(appended_table, company_name, country_name)
 google_sheet_url = "https://docs.google.com/spreadsheets/d/1uC6CVvxTUM3fmXRB7ec7xoF9hIcPVpB9SECXgxqSmX0/edit#gid=0"
 sheet_name = "Inventory_Sales_Summary"
 load_to_google_sheets(transformed_data, google_sheet_url, sheet_name)
-
-
-
-def degittramsform(appended_table):
-    appended_table['ITEM CODE(16 DIGITS)'] = appended_table['ITEM CODE(16 DIGITS)'].astype(str)
-
-    problematic_values = []
-
-    for idx, value in appended_table['ITEM CODE(16 DIGITS)'].items():
-        try:
-            appended_table.at[idx, 'ITEM CODE(16 DIGITS)'] = format_to_16_digits(float(value))
-        except ValueError:
-            problematic_values.append(value)
-            appended_table.at[idx, 'ITEM CODE(16 DIGITS)'] = None
-
-    if problematic_values:
-        print(f"Problematic values in 'ITEM CODE(16 DIGITS)' column: {problematic_values}")
-        
-    return appended_table
 
 
 
@@ -207,7 +210,6 @@ def load_data(gsheet_url):
         df[col] = pd.to_numeric(df[col], errors='coerce')
 
     df = df.dropna(subset=numeric_cols)  # Drop rows with NaN values after conversion
-    df = degittramsform(df)
     df['ID'] = np.arange(1, len(df) + 1)
 
     return df
@@ -217,6 +219,8 @@ gsheetid = '1uC6CVvxTUM3fmXRB7ec7xoF9hIcPVpB9SECXgxqSmX0'
 sheet_name = 'Inventory_Sales_Summary'
 gsheet_url = f'https://docs.google.com/spreadsheets/d/{gsheetid}/gviz/tq?tqx=out:csv&sheet={sheet_name}'
 df = load_data(gsheet_url)
+
+df['ITEM CODE(16 DIGITS)'] = transformed_data['ITEM CODE(16 DIGITS)']
 
 
 Revenue = df['ORIGINAL RRP'].sum().round(2)
