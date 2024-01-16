@@ -91,8 +91,13 @@ def transform_data(appended_table, company_name, country_name):
        'Item Description', '', 'Attribute', '', 'Size', '', 'Item #', '',
        'UPC', '', 'Alternate Lookup', '', 'Dept Code', '', 'Vendor Code', '',
        'CATEGORY', '', 'GENDER', '', 'SEASON', '', 'STYLE NAME/INT. CAT', '',
-       'SKU', '', 'Quick Pick Group', '', 'Ext Price(Inventory)', '', 'Qty(Inventory)', '',
-       'Ext Cost(Inventory', '', 'Ext Price(Sold)', '', 'Qty(Sold)', '', 'Ext Cost(Sold)']
+       'SKU', '', 'Ext Price(Inventory)', '', 'Qty(Inventory)', '', 'Ext Price(Sold)', '', 'Qty(Sold)']
+#     cols = ['', 'Department', 'Week', '', 'Vendor', '', 'Item Name', '',
+#        'Item Description', '', 'Attribute', '', 'Size', '', 'Item #', '',
+#        'UPC', '', 'Alternate Lookup', '', 'Dept Code', '', 'Vendor Code', '',
+#        'CATEGORY', '', 'GENDER', '', 'SEASON', '', 'STYLE NAME/INT. CAT', '',
+#        'SKU', '', 'Quick Pick Group', '', 'Ext Price(Inventory)', '', 'Qty(Inventory)', '',
+#        'Ext Cost(Inventory', '', 'Ext Price(Sold)', '', 'Qty(Sold)', '', 'Ext Cost(Sold)']
     appended_table.columns = cols
     appended_table['name'] = company_name
     appended_table['country'] = country_name
@@ -124,6 +129,7 @@ def transform_data(appended_table, company_name, country_name):
     appended_table = appended_table.iloc[:-1]
     
     return appended_table
+
 
 
 
