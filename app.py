@@ -87,7 +87,7 @@ def format_to_16_digits(x):
 
 
 def transform_data(appended_table, company_name, country_name):
-    cols = ['', 'Department', 'Week', '', 'Vendor', '', 'Item Name', '',
+    cols = ['', 'Department', 'Week','Branch', '', 'Vendor', '', 'Item Name', '',
        'Item Description', '', 'Attribute', '', 'Size', '', 'Item #', '',
        'UPC', '', 'Alternate Lookup', '', 'Dept Code', '', 'Vendor Code', '',
        'CATEGORY', '', 'GENDER', '', 'SEASON', '', 'STYLE NAME/INT. CAT', '',
