@@ -739,17 +739,22 @@ def update_graphs(active_cell):
 @app.callback(
     Output("download-data", "data"),
     [Input("download-button", "n_clicks")],
+    [State("week-input", "value")],
     prevent_initial_call=True,
 )
-def download_data(n_clicks):
+def download_data(n_clicks, selected_week):
     if n_clicks == 0:
         return no_update
 
+    # Filter the DataFrame based on the selected week
+    filtered_data = df[df['WEEK'] == selected_week]
+
     # Create a CSV string from the filtered DataFrame
-    csv_string = df.to_csv(index=False, encoding="utf-8")
+    csv_string = filtered_data.to_csv(index=False, encoding="utf-8")
 
     # Return the download data
-    return dict(content=csv_string, filename="downloaded_data.csv")        
+    return dict(content=csv_string, filename=f"downloaded_data_week_{selected_week}.csv")
+        
 
 
 @app.callback(
