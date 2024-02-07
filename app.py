@@ -831,7 +831,7 @@ def update_line_chart(interval_n, selected_store):
             ]
         ).update_layout(
             title_text='Weekly Stock Unit',
-            height=400, width= 1000,
+            height=400, width= 950,
             paper_bgcolor='#161a28',
             plot_bgcolor='#161a28',
             font=dict(size=10,color='white')
