@@ -310,30 +310,6 @@ agg_dept_season = agg_dept_season[agg_dept_season['ORIGINAL RRP']>0]
 
 
 
-# avrg_week_unit = df.groupby('WEEK').agg({"STORE STOCK UNITS" : "sum"}).reset_index()
-# def drawLine_RavrgT():
-#     return  html.Div([
-#                 dcc.Graph(style={'overflow':'hidden'},
-#                     figure=go.Figure(data=[go.Scatter(x=avrg_week_unit['WEEK'], 
-#                         y=avrg_week_unit['STORE STOCK UNITS'], 
-#                         fill='tozeroy', fillcolor='#FAA831', 
-#                         line_color='#91dfd2' )]
-#                     ).update_layout(
-#                         title_text='Weekly Stock Unit',
-#                         height=400, width= 900,
-#                         paper_bgcolor='#161a28',
-#                         plot_bgcolor='#161a28',
-#                         font=dict(size=10,color='white')
-#                     ),
-#                     config={
-#                         'displayModeBar': False
-#                     }
-#                 ) 
-#     ])
-
-
-
-
 
 
 
@@ -381,14 +357,14 @@ def build_tabs():
                     dcc.Tab(
                         id="Specs-tab",
                         label="Query Engine",
-                        value="tab1",
+                        value="tab2",
                         className="custom-tab",
                         selected_className="custom-tab--selected",
                     ),
                     dcc.Tab(
                         id="Control-chart-tab",
                         label="Charts Engine",
-                        value="tab2",
+                        value="tab1",
                         className="custom-tab",
                         selected_className="custom-tab--selected",
                     ),
@@ -703,20 +679,21 @@ def render_tab_content(tab_switch, interval_n, stopped_interval):
         load_data()
 
     if tab_switch == "tab1":
-        return build_tab_1(), interval_n
-    return (
-        html.Div(
-            id="status-container",
-            children=[
-                build_quick_stats_panel(),
-                html.Div(
-                    id="graphs-container",
-                    children=[build_top_panel(interval_n), build_chart_panel()],
-                ),
-            ],
-        ),
-        interval_n,
-    )
+        
+        return (
+            html.Div(
+                id="status-container",
+                children=[
+                    build_quick_stats_panel(),
+                    html.Div(
+                        id="graphs-container",
+                        children=[build_top_panel(interval_n), build_chart_panel()],
+                    ),
+                ],
+            ),
+            interval_n,
+        )
+    return build_tab_1(), interval_n
 
 # ======= update progress gauge =========
 
