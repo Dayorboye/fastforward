@@ -135,41 +135,6 @@ def transform_data(appended_table, company_name, country_name):
 
 
 
-def authenticate_google_sheets():
-    # Use Google Sheets API credentials
-    scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
-    credentials = ServiceAccountCredentials.from_json_keyfile_name("dogwood-courier-406511-c8a6ccfe04e0.json", scope)
-    gc = gspread.authorize(credentials)
-    return gc
-
-def load_to_google_sheets(data_frame, sheet_url, sheet_name):
-    # Extract sheet key from the sheet URL
-    sheet_key = sheet_url.split("/")[5]
-
-    # Authenticate with Google Sheets
-    gc = authenticate_google_sheets()
-
-    # Open the Google Sheet by key
-    workbook = gc.open_by_key(sheet_key)
-
-    # Get the specified sheet by name; create it if not exists
-    try:
-        worksheet = workbook.worksheet(sheet_name)
-    except gspread.exceptions.WorksheetNotFound:
-        worksheet = workbook.add_worksheet(title=sheet_name, rows="100", cols="20")
-
-    # Clear the existing data in the sheet
-    worksheet.clear()
-
-    # Manually convert problematic columns to strings to avoid numeric conversion issues
-    for column in data_frame.columns:
-        if data_frame[column].dtype == 'float64':
-            data_frame[column] = data_frame[column].astype(str)
-
-    # Write the DataFrame to the Google Sheet
-    set_with_dataframe(worksheet, data_frame)
-
-    print(f"Data successfully loaded into Google Sheet '{sheet_name}' in the workbook with key '{sheet_key}'")
 
 
 
@@ -179,49 +144,9 @@ country_name = 'NIGERIA'
 
 df = None
 sheet_key = "1e7ZZBRt37kEElHnyFF_VV_4bVRqjy3oXNw8cY1OhIcw"  # Replace with your Google Sheet key
-# Load transformed data to Google Sheets
-google_sheet_url = "https://docs.google.com/spreadsheets/d/1uC6CVvxTUM3fmXRB7ec7xoF9hIcPVpB9SECXgxqSmX0/edit#gid=0"
-sheet_name = "Inventory_Sales_Summary"
+
 # load_to_google_sheets(transformed_data, google_sheet_url, sheet_name)
 stopped_interval = 0
-
-
-
-# Function to load data into the DataFrame
-def load_data(gsheet_url):
-    df = pd.read_csv(gsheet_url)
-
-    # Convert relevant columns to string
-    string_cols = ['WEEK','SALES VALUE LAST WEEK LOCAL', 'ORIGINAL RRP', 'STORE STOCK UNITS']
-    df[string_cols] = df[string_cols].astype(str)
-
-    # Replace commas in string columns
-    df['WEEK'] = df['WEEK'].str.replace(',', '')
-    df['SALES VALUE LAST WEEK LOCAL'] = df['SALES VALUE LAST WEEK LOCAL'].str.replace(',', '')
-    df['ORIGINAL RRP'] = df['ORIGINAL RRP'].str.replace(',', '')
-    df['STORE STOCK UNITS'] = df['STORE STOCK UNITS'].str.replace(',', '')
-
-    columns_to_select = ['PARTNER NAME', 'COUNTRY', 'STORE','WEEK', 'DEPARTMENT', 'ITEM CODE(16 DIGITS)',
-                         'CLASSNAME', 'SEASON', 'STYLE NAME', 'COLOUR NAME', 'DESCRIPTION',
-                         'ORIGINAL RRP', 'SALES VALUE LAST WEEK LOCAL', 'SALES UNITS LAST WEEK',
-                         'STORE STOCK UNITS']
-
-    df = df.loc[:, columns_to_select]
-
-    numeric_cols = ['WEEK', 'ORIGINAL RRP', 'SALES VALUE LAST WEEK LOCAL', 'SALES UNITS LAST WEEK', 'STORE STOCK UNITS']
-
-    for col in numeric_cols:
-        df[col] = pd.to_numeric(df[col], errors='coerce')
-
-    df = df.dropna(subset=numeric_cols)  # Drop rows with NaN values after conversion
-    df['ID'] = np.arange(1, len(df) + 1)
-
-    return df
-
-# Load data into DataFrame from Google Sheets
-gsheetid = '1uC6CVvxTUM3fmXRB7ec7xoF9hIcPVpB9SECXgxqSmX0'
-sheet_name = 'Inventory_Sales_Summary'
-gsheet_url = f'https://docs.google.com/spreadsheets/d/{gsheetid}/gviz/tq?tqx=out:csv&sheet={sheet_name}'
 
 
 def load_and_transform_data(sheet_key):
@@ -230,14 +155,33 @@ def load_and_transform_data(sheet_key):
 
     appended_table = extract_and_append_all_tables(sheet_key)
     transformed_data = transform_data(appended_table, company_name, country_name)
-    load_to_google_sheets(transformed_data, google_sheet_url, sheet_name)
-    df = load_data(gsheet_url)
-    df['ITEM CODE(16 DIGITS)'] = transformed_data['ITEM CODE(16 DIGITS)']
+    
+        # Convert relevant columns to string
+    string_cols = ['WEEK','SALES VALUE LAST WEEK LOCAL', 'ORIGINAL RRP', 'STORE STOCK UNITS']
+    transformed_data[string_cols] = transformed_data[string_cols].astype(str)
 
-    end_time = datetime.now()
-    print(f"Data loading and transformation took: {end_time - start_time}")
+    # Replace commas in string columns
+    transformed_data['WEEK'] = transformed_data['WEEK'].str.replace(',', '')
+    transformed_data['SALES VALUE LAST WEEK LOCAL'] = transformed_data['SALES VALUE LAST WEEK LOCAL'].str.replace(',', '')
+    transformed_data['ORIGINAL RRP'] = transformed_data['ORIGINAL RRP'].str.replace(',', '')
+    transformed_data['STORE STOCK UNITS'] = transformed_data['STORE STOCK UNITS'].str.replace(',', '')
 
-    return df
+    columns_to_select = ['PARTNER NAME', 'COUNTRY', 'STORE','WEEK', 'DEPARTMENT', 'ITEM CODE(16 DIGITS)',
+                         'CLASSNAME', 'SEASON', 'STYLE NAME', 'COLOUR NAME', 'DESCRIPTION',
+                         'ORIGINAL RRP', 'SALES VALUE LAST WEEK LOCAL', 'SALES UNITS LAST WEEK',
+                         'STORE STOCK UNITS']
+
+    transformed_data = transformed_data.loc[:, columns_to_select]
+
+    numeric_cols = ['WEEK', 'ORIGINAL RRP', 'SALES VALUE LAST WEEK LOCAL', 'SALES UNITS LAST WEEK', 'STORE STOCK UNITS']
+
+    for col in numeric_cols:
+        transformed_data[col] = pd.to_numeric(transformed_data[col], errors='coerce')
+
+    transformed_data = transformed_data.dropna(subset=numeric_cols)  # Drop rows with NaN values after conversion
+    transformed_data['ID'] = np.arange(1, len(transformed_data) + 1)
+    
+    return transformed_data
 
 # Load transformed data to Google Sheets
 df = load_and_transform_data(sheet_key)
@@ -553,9 +497,9 @@ app.layout = html.Div(
         build_banner(),
         dcc.Interval(
             id="interval-component",
-            interval= 60 * 1000,  # update every 1 minutes
-            n_intervals=50,  # start at batch 50
-            disabled=True,
+            interval=60000,  # Update every 1 minute (60000 milliseconds)
+            n_intervals=50,  # Start at batch 50
+            disabled=False,  # Enable the interval component
         ),
         html.Div(
             id="app-container",
@@ -565,10 +509,11 @@ app.layout = html.Div(
                 html.Div(id="app-content"),
             ],
         ),
-        dcc.Store(id="value-setter-store", ),
+        dcc.Store(id="value-setter-store"),
         dcc.Store(id="n-interval-stage", data=50),
     ],
 )
+
 
 
 
@@ -676,7 +621,7 @@ def render_tab_content(tab_switch, interval_n, stopped_interval):
     if interval_n > stopped_interval:
         # If the interval has passed the last stopped interval, update the data
         # Add your data update logic here
-        load_data()
+        df
 
     if tab_switch == "tab1":
         
@@ -711,7 +656,7 @@ def update_sunburst_graph(interval_n, selected_week, selected_store):
     if interval_n > stopped_interval:
         # If the interval has passed the last stopped interval, update the data
         # Add your data update logic here
-        load_data(gsheet_url)  # Provide the gsheet_url argument here
+        df  # Provide the gsheet_url argument here
 
     stopped_interval = interval_n  # Update stopped_interval
 
@@ -752,7 +697,7 @@ def update_bar_chart(interval_n, selected_week, selected_store):
     if interval_n > stopped_interval:
         # If the interval has passed the last stopped interval, update the data
         # Add your data update logic here
-        load_data()
+        df
 
     stopped_interval = interval_n  # Update stopped_interval
 
@@ -810,7 +755,7 @@ def update_line_chart(interval_n, selected_store):
     if interval_n > stopped_interval:
         # If the interval has passed the last stopped interval, update the data
         # Add your data update logic here
-        load_data()
+        df
 
     stopped_interval = interval_n  # Update stopped_interval
 
@@ -831,7 +776,7 @@ def update_line_chart(interval_n, selected_store):
             ]
         ).update_layout(
             title_text='Weekly Stock Unit',
-            height=400, width= 950,
+            height=400, width= 820,
             paper_bgcolor='#161a28',
             plot_bgcolor='#161a28',
             font=dict(size=10,color='white')
