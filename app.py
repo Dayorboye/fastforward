@@ -9,6 +9,7 @@ import dash_bootstrap_components as dbc
 import dash_daq as daq
 import gspread
 import numpy as np
+import matplotlib as mpl
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objs as go
@@ -106,7 +107,7 @@ def transform_data(appended_table, company_name, country_name):
                                      'Ext Price(Sold)','Qty(Sold)','Qty(Inventory)']]
     
     colss = ['PARTNER NAME','COUNTRY','WEEK','STORE','DEPARTMENT','ITEM CODE(16 DIGITS)','CLASSNAME','SEASON',
-            'STYLE NAME','COLOUR NAME','DESCRIPTION','ORIGINAL RRP','SALES VALUE LAST WEEK LOCAL',
+            'STYLE NAME','COLOUR NAME','DESCRIPTION','ORIGINAL RRP','SALES LAST WEEK',
             'SALES UNITS LAST WEEK','STORE STOCK UNITS']
     appended_table.columns = colss
     
@@ -157,23 +158,23 @@ def load_and_transform_data(sheet_key):
     transformed_data = transform_data(appended_table, company_name, country_name)
     
         # Convert relevant columns to string
-    string_cols = ['WEEK','SALES VALUE LAST WEEK LOCAL', 'ORIGINAL RRP', 'STORE STOCK UNITS']
+    string_cols = ['WEEK','SALES LAST WEEK', 'ORIGINAL RRP', 'STORE STOCK UNITS']
     transformed_data[string_cols] = transformed_data[string_cols].astype(str)
 
     # Replace commas in string columns
     transformed_data['WEEK'] = transformed_data['WEEK'].str.replace(',', '')
-    transformed_data['SALES VALUE LAST WEEK LOCAL'] = transformed_data['SALES VALUE LAST WEEK LOCAL'].str.replace(',', '')
+    transformed_data['SALES LAST WEEK'] = transformed_data['SALES LAST WEEK'].str.replace(',', '')
     transformed_data['ORIGINAL RRP'] = transformed_data['ORIGINAL RRP'].str.replace(',', '')
     transformed_data['STORE STOCK UNITS'] = transformed_data['STORE STOCK UNITS'].str.replace(',', '')
 
     columns_to_select = ['PARTNER NAME', 'COUNTRY', 'STORE','WEEK', 'DEPARTMENT', 'ITEM CODE(16 DIGITS)',
                          'CLASSNAME', 'SEASON', 'STYLE NAME', 'COLOUR NAME', 'DESCRIPTION',
-                         'ORIGINAL RRP', 'SALES VALUE LAST WEEK LOCAL', 'SALES UNITS LAST WEEK',
+                         'ORIGINAL RRP', 'SALES LAST WEEK', 'SALES UNITS LAST WEEK',
                          'STORE STOCK UNITS']
 
     transformed_data = transformed_data.loc[:, columns_to_select]
 
-    numeric_cols = ['WEEK', 'ORIGINAL RRP', 'SALES VALUE LAST WEEK LOCAL', 'SALES UNITS LAST WEEK', 'STORE STOCK UNITS']
+    numeric_cols = ['WEEK', 'ORIGINAL RRP', 'SALES LAST WEEK', 'SALES UNITS LAST WEEK', 'STORE STOCK UNITS']
 
     for col in numeric_cols:
         transformed_data[col] = pd.to_numeric(transformed_data[col], errors='coerce')
@@ -190,7 +191,7 @@ df = load_and_transform_data(sheet_key)
 
 Revenue = df['ORIGINAL RRP'].sum().round(2)
 TR = 'Revenue  '
-StuckLocal = df['SALES VALUE LAST WEEK LOCAL'].sum().round(2)
+StuckLocal = df['SALES LAST WEEK'].sum().round(2)
 SL = 'Stuck Local'
 StuckUnit = df['STORE STOCK UNITS'].sum().round(2)
 SU = 'Stuck Unit'
@@ -229,13 +230,12 @@ def drawText(name, val):
 
 
 
-params = list(df)
-max_length = len(df)
+# params = list(df)
+# max_length = len(df)
 
 
 
-import numpy as np
-import matplotlib as mpl
+
 colors={}
 def colorFader(c1,c2,mix=0): 
     c1=np.array(mpl.colors.to_rgb(c1))
@@ -533,7 +533,7 @@ def update_text_elements(selected_week, selected_store):
     filtered_data = df[(df['WEEK'] == selected_week) & (df['STORE'] == selected_store)]
 
     updated_revenue = filtered_data['ORIGINAL RRP'].sum().round(2)
-    updated_stuck_local = filtered_data['SALES VALUE LAST WEEK LOCAL'].sum().round(2)
+    updated_stuck_local = filtered_data['SALES LAST WEEK'].sum().round(2)
     updated_stuck_unit = filtered_data['STORE STOCK UNITS'].sum().round(2)
 
     card_1 = drawText(TR, updated_revenue)
@@ -662,12 +662,12 @@ def update_sunburst_graph(interval_n, selected_week, selected_store):
 
     # Get the filtered data
     filtered_data = df[(df['WEEK'] == selected_week) & (df['STORE'] == selected_store)]
-    agg_dept_season = filtered_data.groupby(['DEPARTMENT', 'SEASON']).agg({"SALES VALUE LAST WEEK LOCAL": "sum"}).reset_index()
-    agg_dept_season = agg_dept_season[agg_dept_season['SALES VALUE LAST WEEK LOCAL'] > 0]
+    agg_dept_season = filtered_data.groupby(['DEPARTMENT', 'SEASON']).agg({"SALES LAST WEEK": "sum"}).reset_index()
+    agg_dept_season = agg_dept_season[agg_dept_season['SALES LAST WEEK'] > 0]
 
     sunburst_graph = dcc.Graph(
-        figure=px.sunburst(agg_dept_season, path=['DEPARTMENT', 'SEASON'], values='SALES VALUE LAST WEEK LOCAL',
-                           color='SALES VALUE LAST WEEK LOCAL',
+        figure=px.sunburst(agg_dept_season, path=['DEPARTMENT', 'SEASON'], values='SALES LAST WEEK',
+                           color='SALES LAST WEEK',
                            color_continuous_scale=[colors['level2'], colors['level10']],
                            ).update_layout(
             title_text='Department & Season',
@@ -703,8 +703,8 @@ def update_bar_chart(interval_n, selected_week, selected_store):
 
     # Get the filtered data
     filtered_data = df[(df['WEEK'] == selected_week) & (df['STORE'] == selected_store)]
-    agg_Dept_Rev = filtered_data.groupby('DEPARTMENT').agg({"SALES VALUE LAST WEEK LOCAL": "sum"}).reset_index().sort_values(
-        by='SALES VALUE LAST WEEK LOCAL', ascending=False)
+    agg_Dept_Rev = filtered_data.groupby('DEPARTMENT').agg({"SALES LAST WEEK": "sum"}).reset_index().sort_values(
+        by='SALES LAST WEEK', ascending=False)
     agg_Dept_Rev['color'] = colors['level10']
     agg_Dept_Rev['color'][:1] = colors['level1']
     agg_Dept_Rev['color'][1:2] = colors['level2']
@@ -712,16 +712,16 @@ def update_bar_chart(interval_n, selected_week, selected_store):
     agg_Dept_Rev['color'][3:4] = colors['level4']
 
     bar_chart = dcc.Graph(
-        figure=go.Figure(data=[go.Bar(x=agg_Dept_Rev['SALES VALUE LAST WEEK LOCAL'],
+        figure=go.Figure(data=[go.Bar(x=agg_Dept_Rev['SALES LAST WEEK'],
                                       y=agg_Dept_Rev['DEPARTMENT'],
                                       marker=dict(color='#FAA831'),
                                       name='DEPARTMENT', orientation='h',
-                                      text=agg_Dept_Rev['SALES VALUE LAST WEEK LOCAL'].astype(int),
+                                      text=agg_Dept_Rev['SALES LAST WEEK'].astype(int),
                                       textposition='auto',
                                       hoverinfo='text',
                                       hovertext=
                                       '<b>DEPARTMENT</b>:' + agg_Dept_Rev['DEPARTMENT'] + '<br>' +
-                                      '<b>Sales</b>:' + agg_Dept_Rev['SALES VALUE LAST WEEK LOCAL'].astype(
+                                      '<b>Sales</b>:' + agg_Dept_Rev['SALES LAST WEEK'].astype(
                                           int).astype(str) + '<br>',
                                       )]
 
@@ -730,7 +730,8 @@ def update_bar_chart(interval_n, selected_week, selected_store):
             paper_bgcolor='#161a28',
             plot_bgcolor='#161a28',
             font=dict(size=10, color='white'),
-            height=400
+            height=400,
+   
         ),
         config={
             'displayModeBar': False
